@@ -1,27 +1,34 @@
 import pandas as pd
+import glob
+import os.path
+
+def printKBs(df):
+    for val in df['KB'].unique():
+        df_kb = df.query(f'KB == @val')
+        print("-" * 30 + "KB for installation" + "-" * 30 + "\n")
+        print(df_kb[['Hostname', 'KB', 'CVE Description']].to_string(index=False), "\n")
+def readReportFile():
+    folder_path = r'/Users/xsun/Downloads'
+    file_type = '/*csv'
+    files = glob.glob(folder_path + file_type)
+
+    max_file = max(files, key=os.path.getctime)
+    return max_file
 
 def pandasExe():
-    #
-    # s1 = pd.Series(['a', 'b', 'c'], index=[1, 2, 3])
-    # print(s1)
-    #
-    # s2 = pd.Series({1:"abc", 2:"edf"})
-    # print(s2)
+    pd.set_option('display.max_colwidth', None)
+    reportFile = readReportFile()
+    df = pd.read_csv(reportFile)
+    df = df[~df["Hostname"].isin(['RISE-PRPDEVSQL', 'RISE-RPTPRESQL', 'RISE-EXRDEVSQL'])]
+    df[['Install', 'KB']] = df['Remediation Details'].str.split(r':', expand=True)
+    #print(df.info(), "\n")
 
-    # df1 = pd.DataFrame([['a', 'A'], ['b', 'B'], ['c', 'C'], ['d', 'D']], columns=['low', 'upper'])
-    # print(df1)
-    # print(df1.columns)
-    # print(df1.index)
-    #
-    # df2 = pd.DataFrame({"low":['a', 'b', 'c'], "upper":['A', 'B', 'C']})
-    # print(df2)
-    # print(df2.columns)
-    # print(df2.index)
-
-    df3 = pd.read_excel(r"/Users/xsun/Downloads/OriginalOrgnizationAdminHeadInfo_TEST.xlsx", usecols=[1, 3]);
-    print(df3, "\n")
-
-
+    df_critical = df.query('Severity == "CRITICAL"')
+    df_high = df.query('Severity == "HIGH"')
+    print("#" * 30 + " Critical Vulnerability " + "#" * 30 + "\n")
+    printKBs(df_critical)
+    print("#" * 30 + " High Vulnerability " + "#" * 30 + "\n")
+    printKBs(df_high)
 
 if __name__ == '__main__':
     pandasExe()
