@@ -16,10 +16,14 @@ def getKBInfo(url):
 
 def printKBs(df, file_object):
     for val in df['KB'].unique():
-        df_kb = df.query(f'KB == @val')
-        kbInfo = getKBInfo(df_kb["Remediation Links"].to_string(index=False))
-        file_object.write("<h2>" + kbInfo + " for installation</h2>" + '\n')
-        _html = df_kb[['Hostname', 'KB', 'CVE Description', 'Remediation Links']].to_html(index=False)
+        if val == "NoKB":
+            _html = df[['Hostname', 'Recommended Remediations', 'CVE Description', 'Remediation Links']].to_html(index=False)
+        else:
+            df_kb = df.query(f'KB == @val')
+            kbInfo = getKBInfo(df_kb["Remediation Links"].to_string(index=False))
+            file_object.write("<h2>" + kbInfo + " for installation</h2>" + '\n')
+            _html = df_kb[['Hostname', 'KB', 'CVE Description', 'Remediation Links']].to_html(index=False)
+
         file_object.write(_html)
 
 def readReportFile():
@@ -35,6 +39,11 @@ def pandasExe():
     reportFile = readReportFile()
     df = pd.read_csv(reportFile)
     df = df[~df["Hostname"].isin(['RISE-PRPDEVSQL', 'RISE-RPTPRESQL', 'RISE-EXRDEVSQL'])]
+    if df.empty:
+        print('DataFrame is empty!')
+        return
+    df.loc[~df['Remediation Details'].str.contains(":"), "Remediation Details"] = df['Remediation Details'].astype(str) + ":NoKB"
+    print(df['Remediation Details'])
     df[['Install', 'KB']] = df['Remediation Details'].str.split(r':', expand=True)
     file_object = open("data.html", "w")
     df_critical = df.query('Severity == "CRITICAL"')
@@ -45,7 +54,7 @@ def pandasExe():
     file_object.write("<h1>High Vulnerability</h1>" + '\n')
     printKBs(df_high, file_object)
     file_object.close()
-
+    return "Report Has Been Processed"
 
 if __name__ == '__main__':
     pandasExe()
