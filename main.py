@@ -8,9 +8,13 @@ import re
 def getKBInfo(url):
     urlList = url.split('=')
     lastStr = urlList[-1].rstrip("\n")
+    #print(lastStr)
     kbNumber = lastStr[-7:]
+    #print(kbNumber)
+    if not kbNumber.isdigit():
+        return ""
     page = requests.get("https://support.microsoft.com/app/content/api/content/help/en-us/" + kbNumber)
-    print(page.content)
+    #print(page.content)
     site_json = json.loads(page.content)
     return re.sub('\W+', ' ', str(site_json["details"]["heading"]))
 
